@@ -17,9 +17,11 @@ import (
   "github.com/mhoc/msgoraph/user"
 )
 
-client := msgoraph.NewClient(clientID, clientSecret)
-u, _ := client.Tenant(tenantID).User(emailAddress, user.DefaultFields)
-fmt.Printf("%v\n", u.PreferredName)
+func main() {
+  client := msgoraph.NewClient(clientID, clientSecret)
+  u, _ := client.Tenant(tenantID).User(emailAddress, user.DefaultFields)
+  fmt.Printf("%v\n", u.PreferredName)
+}
 ```
 
 ## Supported Operations
