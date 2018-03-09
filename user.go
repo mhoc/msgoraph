@@ -99,8 +99,8 @@ const (
 )
 
 var (
-	// AllUserFields specifies every user field available for selection in api calls.
-	AllUserFields = []UserField{
+	// UserAllFields specifies every user field available for selection in api calls.
+	UserAllFields = []UserField{
 		UserFieldID,
 		UserFieldAboutMe,
 		UserFieldAccountEnabled,
@@ -145,9 +145,9 @@ var (
 		UserFieldUsageLocation,
 		UserFieldUserPrincipalName,
 	}
-	// DefaultUserFields specifies the Microsoft-specified default fields available for selection
+	// UserDefaultFields specifies the Microsoft-specified default fields available for selection
 	// in API calls.
-	DefaultUserFields = []UserField{
+	UserDefaultFields = []UserField{
 		UserFieldAccountEnabled,
 		UserFieldBusinessPhones,
 		UserFieldDisplayName,
@@ -268,6 +268,12 @@ type UserPasswordProfile struct {
 	Password                      string `json:"password"`
 }
 
+// User returns a single user by id or principal name, with the Microsoft default fields
+// provided, identical to those specified in UserDefaultFields.
+func (t *TenantCnct) User(userIDOrPrincipal string) (*User, error) {
+	return t.UserWithFields(userIDOrPrincipal, UserDefaultFields)
+}
+
 // UserWithFields returns a single user by id or principal name. You need to specify a list of
 // fields you want to project on the user returned. You can specify UserDefaultFields or
 // UserAllFields, or customize it depending on what you want.
@@ -299,6 +305,12 @@ func (t *TenantCnct) UserWithFields(userIDOrPrincipal string, projection []UserF
 		return nil, err
 	}
 	return &data.User, nil
+}
+
+// Users returns all users in the tenant, with each user projected with the Microsoft-defined
+// default fields identical to UserAllFields.
+func (t *TenantCnct) Users() ([]*User, error) {
+	return t.UsersWithFields(UserAllFields)
 }
 
 // UsersWithFields returns the users on a tenant's azure instance. You need to specify a list of
