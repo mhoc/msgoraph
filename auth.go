@@ -73,8 +73,7 @@ func (t *TenantCnct) RefreshAccessToken() error {
 	if err != nil {
 		return err
 	}
-	t.AccessToken = token.Token
-	t.AccessTokenExpiresAt = token.ExpiresAt
+	t.AccessToken = token
 	return nil
 }
 
@@ -83,7 +82,7 @@ func (t *TenantCnct) RefreshAccessToken() error {
 func (t *TenantCnct) RefreshAccessTokenIfExpired() error {
 	t.UpdatingAccessToken.Lock()
 	defer t.UpdatingAccessToken.Unlock()
-	if t.AccessToken != "" && t.AccessTokenExpiresAt.After(time.Now()) {
+	if t.AccessToken.Token != "" && t.AccessToken.ExpiresAt.After(time.Now()) {
 		return nil
 	}
 	return t.RefreshAccessToken()

@@ -290,7 +290,7 @@ func (t *TenantCnct) UserWithFields(userIDOrPrincipal string, projection []UserF
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", t.AccessToken))
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", t.AccessToken.Token))
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -322,7 +322,7 @@ func (t *TenantCnct) UsersWithFields(projection []UserField) ([]*User, error) {
 		if err != nil {
 			return nil, "", err
 		}
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", t.AccessToken))
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", t.AccessToken.Token))
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return nil, "", err

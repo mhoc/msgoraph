@@ -2,7 +2,6 @@ package msgoraph
 
 import (
 	"sync"
-	"time"
 )
 
 // Client maintains "connections" to multiple tenants' Azure instances. It takes care of auto-
@@ -19,11 +18,10 @@ type Client struct {
 // to write methods against this type, but in the future we could also use different clients ids
 // and secrets for different tenants.
 type TenantCnct struct {
-	AccessToken          string
-	AccessTokenExpiresAt time.Time
-	ClientID             string
-	ClientSecret         string
-	TenantID             string
+	AccessToken  *AccessToken
+	ClientID     string
+	ClientSecret string
+	TenantID     string
 	// A mutex is used to protect the access token against refreshes by multiple threads. This is
 	// all handled by the RefreshAccessTokenIfExpired function.
 	UpdatingAccessToken sync.Mutex
@@ -44,6 +42,7 @@ func (c *Client) Tenant(tenantID string) *TenantCnct {
 	cnct, in := c.Cncts[tenantID]
 	if !in {
 		c.Cncts[tenantID] = &TenantCnct{
+			AccessToken:  &AccessToken{},
 			ClientID:     c.ClientID,
 			ClientSecret: c.ClientSecret,
 			TenantID:     tenantID,
