@@ -28,4 +28,5 @@ func main() {
 ## Supported Operations
 
 - `List Users`
+- `Create User`
 - `Get User`

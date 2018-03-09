@@ -1,6 +1,7 @@
 package msgoraph
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -163,6 +164,16 @@ var (
 	}
 )
 
+// CreateUserRequest is all the available args you can set when creating a user.
+type CreateUserRequest struct {
+	AccountEnabled        bool                `json:"accountEnabled"`
+	DisplayName           string              `json:"displayName"`
+	OnPremisesImmutableID string              `json:"onPremisesImmutableId"`
+	MailNickname          string              `json:"mailNickname"`
+	PasswordProfile       UserPasswordProfile `json:"passwordProfile"`
+	UserPrincipalName     string              `json:"userPrincipalName"`
+}
+
 // getUserResponse is the response to expect on a GetUser Request.
 type getUserResponse struct {
 	Context string `json:"@odata.context"`
@@ -266,6 +277,35 @@ type UserMailboxSettings struct {
 type UserPasswordProfile struct {
 	ForceChangePasswordNextSignIn bool   `json:"forceChangePasswordNextSignIn"`
 	Password                      string `json:"password"`
+}
+
+// CreateUser creates a new user in the tenant.
+func (t *TenantCnct) CreateUser(user CreateUserRequest) (*User, error) {
+	j, err := json.Marshal(user)
+	if err != nil {
+		return nil, err
+	}
+	reqURL := "https://graph.microsoft.com/v1.0/users"
+	req, err := http.NewRequest("POST", reqURL, bytes.NewBuffer(j))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", t.AccessToken.Token))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var data getUserResponse
+	err = json.Unmarshal(b, &data)
+	if err != nil {
+		return nil, err
+	}
+	return &data.User, nil
 }
 
 // User returns a single user by id or principal name, with the Microsoft default fields
