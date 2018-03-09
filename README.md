@@ -16,12 +16,11 @@ package main
 import (
   "fmt"
   "github.com/mhoc/msgoraph"
-  "github.com/mhoc/msgoraph/user"
 )
 
 func main() {
   client := msgoraph.NewClient(clientID, clientSecret)
-  u, _ := client.Tenant(tenantID).User(emailAddress)
+  u, _ := client.Tenant(tenantID).UserWithFields(emailAddress, msgoraph.UserDefaultFields)
   fmt.Printf("%v\n", u.PreferredName)
 }
 ```
