@@ -21,7 +21,7 @@ import (
 
 func main() {
   client := msgoraph.NewClient(clientID, clientSecret)
-  u, _ := client.Tenant(tenantID).User(emailAddress, user.DefaultFields)
+  u, _ := client.Tenant(tenantID).User(emailAddress)
   fmt.Printf("%v\n", u.PreferredName)
 }
 ```
