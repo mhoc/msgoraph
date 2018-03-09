@@ -3,9 +3,6 @@ package msgoraph
 import (
 	"sync"
 	"time"
-
-	"github.com/mhoc/msgoraph/auth"
-	"github.com/mhoc/msgoraph/user"
 )
 
 // Client maintains "connections" to multiple tenants' Azure instances. It takes care of auto-
@@ -54,68 +51,4 @@ func (c *Client) Tenant(tenantID string) *TenantCnct {
 	}
 	cnct = c.Cncts[tenantID]
 	return cnct
-}
-
-// RefreshAccessToken can be called to force the client to refresh the access token for a given
-// tenant. Generally consumers don't need to call this; it is all handled internally on every
-// API request, but it is exposed in the event consumers find it necessary.
-func (t *TenantCnct) RefreshAccessToken() error {
-	token, err := auth.GetAccessToken(t.ClientID, t.ClientSecret, t.TenantID)
-	if err != nil {
-		return err
-	}
-	t.AccessToken = token.Token
-	t.AccessTokenExpiresAt = token.ExpiresAt
-	return nil
-}
-
-// RefreshAccessTokenIfExpired checks the expiration on the current token and only refreshes it
-// if it is expired.
-func (t *TenantCnct) RefreshAccessTokenIfExpired() error {
-	t.UpdatingAccessToken.Lock()
-	defer t.UpdatingAccessToken.Unlock()
-	if t.AccessToken != "" && t.AccessTokenExpiresAt.After(time.Now()) {
-		return nil
-	}
-	return t.RefreshAccessToken()
-}
-
-// User returns a single user from azure by user id or principal name (usually their email address),
-// projecting the user with the default fields returned by Microsoft.
-func (t *TenantCnct) User(userIDOrPrincipal string) (*user.User, error) {
-	err := t.RefreshAccessTokenIfExpired()
-	if err != nil {
-		return nil, err
-	}
-	return user.GetUser(t.AccessToken, userIDOrPrincipal, user.DefaultFields)
-}
-
-// UserWithFields returns a single user from azure by user id or principal name (usually their email
-// address), and allows you to specify the projection of fields on the returned user.
-func (t *TenantCnct) UserWithFields(userIDOrPrincipal string, projection []user.Field) (*user.User, error) {
-	err := t.RefreshAccessTokenIfExpired()
-	if err != nil {
-		return nil, err
-	}
-	return user.GetUser(t.AccessToken, userIDOrPrincipal, projection)
-}
-
-// Users returns all of the users on the given tenant, with each user projected with the default
-// fields provided by Microsoft.
-func (t *TenantCnct) Users() ([]*user.User, error) {
-	err := t.RefreshAccessTokenIfExpired()
-	if err != nil {
-		return nil, err
-	}
-	return user.ListUsers(t.AccessToken, user.DefaultFields)
-}
-
-// UsersWithFields returns all of the users on the given tenant, with each user projected with the
-// projection you provide.
-func (t *TenantCnct) UsersWithFields(projection []user.Field) ([]*user.User, error) {
-	err := t.RefreshAccessTokenIfExpired()
-	if err != nil {
-		return nil, err
-	}
-	return user.ListUsers(t.AccessToken, projection)
 }

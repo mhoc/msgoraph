@@ -1,4 +1,4 @@
-package auth
+package msgoraph
 
 import (
 	"encoding/json"
@@ -16,17 +16,17 @@ type AccessToken struct {
 	Token     string
 }
 
-// Endpoint returns the oauth2 endpoint to which we should make a post request to retrieve
+// AuthEndpoint returns the oauth2 endpoint to which we should make a post request to retrieve
 // a new oauth2 token.
-func Endpoint(tenantID string) string {
-	return fmt.Sprintf("https://login.microsoftonline.com/%v/oauth2/v2.0/token", tenantID)
+func (t *TenantCnct) AuthEndpoint() string {
+	return fmt.Sprintf("https://login.microsoftonline.com/%v/oauth2/v2.0/token", t.TenantID)
 }
 
 // GetAccessToken retrieves a 5 minute access token on the given tenant connection.
-func GetAccessToken(clientID string, clientSecret string, tenantID string) (*AccessToken, error) {
-	resp, err := http.PostForm(Endpoint(tenantID), url.Values{
-		"client_id":     {clientID},
-		"client_secret": {clientSecret},
+func (t *TenantCnct) GetAccessToken() (*AccessToken, error) {
+	resp, err := http.PostForm(t.AuthEndpoint(), url.Values{
+		"client_id":     {t.ClientID},
+		"client_secret": {t.ClientSecret},
 		"grant_type":    {"client_credentials"},
 		"scope":         {"https://graph.microsoft.com/.default"},
 	})
@@ -63,4 +63,28 @@ func GetAccessToken(clientID string, clientSecret string, tenantID string) (*Acc
 		ExpiresAt: expiresAt,
 		Token:     accessToken,
 	}, nil
+}
+
+// RefreshAccessToken can be called to force the client to refresh the access token for a given
+// tenant. Generally consumers don't need to call this; it is all handled internally on every
+// API request, but it is exposed in the event consumers find it necessary.
+func (t *TenantCnct) RefreshAccessToken() error {
+	token, err := t.GetAccessToken()
+	if err != nil {
+		return err
+	}
+	t.AccessToken = token.Token
+	t.AccessTokenExpiresAt = token.ExpiresAt
+	return nil
+}
+
+// RefreshAccessTokenIfExpired checks the expiration on the current token and only refreshes it
+// if it is expired.
+func (t *TenantCnct) RefreshAccessTokenIfExpired() error {
+	t.UpdatingAccessToken.Lock()
+	defer t.UpdatingAccessToken.Unlock()
+	if t.AccessToken != "" && t.AccessTokenExpiresAt.After(time.Now()) {
+		return nil
+	}
+	return t.RefreshAccessToken()
 }
