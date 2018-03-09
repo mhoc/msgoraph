@@ -30,3 +30,4 @@ func main() {
 - `List Users`
 - `Create User`
 - `Get User`
+- `Delete User`
