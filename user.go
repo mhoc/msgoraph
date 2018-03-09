@@ -281,6 +281,10 @@ type UserPasswordProfile struct {
 
 // CreateUser creates a new user in the tenant.
 func (t *TenantCnct) CreateUser(user CreateUserRequest) (*User, error) {
+	err := t.RefreshAccessTokenIfExpired()
+	if err != nil {
+		return nil, err
+	}
 	j, err := json.Marshal(user)
 	if err != nil {
 		return nil, err
@@ -308,6 +312,25 @@ func (t *TenantCnct) CreateUser(user CreateUserRequest) (*User, error) {
 	return &data.User, nil
 }
 
+// DeleteUser deletes an existing user on Microsoft
+func (t *TenantCnct) DeleteUser(userIDOrPrincipal string) error {
+	err := t.RefreshAccessTokenIfExpired()
+	if err != nil {
+		return err
+	}
+	reqURL := fmt.Sprintf("https://graph.microsoft.com/v1.0/users/%v", userIDOrPrincipal)
+	req, err := http.NewRequest("DELETE", reqURL, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", t.AccessToken.Token))
+	_, err = http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // User returns a single user by id or principal name, with the Microsoft default fields
 // provided, identical to those specified in UserDefaultFields.
 func (t *TenantCnct) User(userIDOrPrincipal string) (*User, error) {
@@ -318,6 +341,10 @@ func (t *TenantCnct) User(userIDOrPrincipal string) (*User, error) {
 // fields you want to project on the user returned. You can specify UserDefaultFields or
 // UserAllFields, or customize it depending on what you want.
 func (t *TenantCnct) UserWithFields(userIDOrPrincipal string, projection []UserField) (*User, error) {
+	err := t.RefreshAccessTokenIfExpired()
+	if err != nil {
+		return nil, err
+	}
 	if len(projection) == 0 {
 		return nil, fmt.Errorf("no fields provided in call to Users")
 	}
@@ -357,6 +384,10 @@ func (t *TenantCnct) Users() ([]*User, error) {
 // fields you want to project on the users returned. You can specify UserDefaultFields or
 // UserAllFields, or customize it depending on what you want.
 func (t *TenantCnct) UsersWithFields(projection []UserField) ([]*User, error) {
+	err := t.RefreshAccessTokenIfExpired()
+	if err != nil {
+		return nil, err
+	}
 	getUserPage := func(url string) ([]*User, string, error) {
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
