@@ -280,7 +280,7 @@ type UserPasswordProfile struct {
 }
 
 // CreateUser creates a new user in the tenant.
-func (t *TenantCnct) CreateUser(user CreateUserRequest) (*User, error) {
+func (t *Tenant) CreateUser(user CreateUserRequest) (*User, error) {
 	err := t.RefreshAccessTokenIfExpired()
 	if err != nil {
 		return nil, err
@@ -313,7 +313,7 @@ func (t *TenantCnct) CreateUser(user CreateUserRequest) (*User, error) {
 }
 
 // DeleteUser deletes an existing user on Microsoft
-func (t *TenantCnct) DeleteUser(userIDOrPrincipal string) error {
+func (t *Tenant) DeleteUser(userIDOrPrincipal string) error {
 	err := t.RefreshAccessTokenIfExpired()
 	if err != nil {
 		return err
@@ -333,14 +333,14 @@ func (t *TenantCnct) DeleteUser(userIDOrPrincipal string) error {
 
 // User returns a single user by id or principal name, with the Microsoft default fields
 // provided, identical to those specified in UserDefaultFields.
-func (t *TenantCnct) User(userIDOrPrincipal string) (*User, error) {
+func (t *Tenant) User(userIDOrPrincipal string) (*User, error) {
 	return t.UserWithFields(userIDOrPrincipal, UserDefaultFields)
 }
 
 // UserWithFields returns a single user by id or principal name. You need to specify a list of
 // fields you want to project on the user returned. You can specify UserDefaultFields or
 // UserAllFields, or customize it depending on what you want.
-func (t *TenantCnct) UserWithFields(userIDOrPrincipal string, projection []UserField) (*User, error) {
+func (t *Tenant) UserWithFields(userIDOrPrincipal string, projection []UserField) (*User, error) {
 	err := t.RefreshAccessTokenIfExpired()
 	if err != nil {
 		return nil, err
@@ -376,14 +376,14 @@ func (t *TenantCnct) UserWithFields(userIDOrPrincipal string, projection []UserF
 
 // Users returns all users in the tenant, with each user projected with the Microsoft-defined
 // default fields identical to UserAllFields.
-func (t *TenantCnct) Users() ([]*User, error) {
+func (t *Tenant) Users() ([]*User, error) {
 	return t.UsersWithFields(UserAllFields)
 }
 
 // UsersWithFields returns the users on a tenant's azure instance. You need to specify a list of
 // fields you want to project on the users returned. You can specify UserDefaultFields or
 // UserAllFields, or customize it depending on what you want.
-func (t *TenantCnct) UsersWithFields(projection []UserField) ([]*User, error) {
+func (t *Tenant) UsersWithFields(projection []UserField) ([]*User, error) {
 	err := t.RefreshAccessTokenIfExpired()
 	if err != nil {
 		return nil, err

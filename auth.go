@@ -18,12 +18,12 @@ type AccessToken struct {
 
 // AuthEndpoint returns the oauth2 endpoint to which we should make a post request to retrieve
 // a new oauth2 token.
-func (t *TenantCnct) AuthEndpoint() string {
+func (t *Tenant) AuthEndpoint() string {
 	return fmt.Sprintf("https://login.microsoftonline.com/%v/oauth2/v2.0/token", t.TenantID)
 }
 
 // GetAccessToken retrieves a 5 minute access token on the given tenant connection.
-func (t *TenantCnct) GetAccessToken() (*AccessToken, error) {
+func (t *Tenant) GetAccessToken() (*AccessToken, error) {
 	resp, err := http.PostForm(t.AuthEndpoint(), url.Values{
 		"client_id":     {t.ClientID},
 		"client_secret": {t.ClientSecret},
@@ -68,7 +68,7 @@ func (t *TenantCnct) GetAccessToken() (*AccessToken, error) {
 // RefreshAccessToken can be called to force the client to refresh the access token for a given
 // tenant. Generally consumers don't need to call this; it is all handled internally on every
 // API request, but it is exposed in the event consumers find it necessary.
-func (t *TenantCnct) RefreshAccessToken() error {
+func (t *Tenant) RefreshAccessToken() error {
 	token, err := t.GetAccessToken()
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func (t *TenantCnct) RefreshAccessToken() error {
 
 // RefreshAccessTokenIfExpired checks the expiration on the current token and only refreshes it
 // if it is expired.
-func (t *TenantCnct) RefreshAccessTokenIfExpired() error {
+func (t *Tenant) RefreshAccessTokenIfExpired() error {
 	t.UpdatingAccessToken.Lock()
 	defer t.UpdatingAccessToken.Unlock()
 	if t.AccessToken.Token != "" && t.AccessToken.ExpiresAt.After(time.Now()) {

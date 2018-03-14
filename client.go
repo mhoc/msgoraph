@@ -10,14 +10,14 @@ import (
 type Client struct {
 	ClientID     string
 	ClientSecret string
-	Cncts        map[string]*TenantCnct
+	Cncts        map[string]*Tenant
 }
 
-// TenantCnct represents an individual connection to an azure tenant. Note that this copies the
+// Tenant represents an individual connection to an azure tenant. Note that this copies the
 // client id and client secret fields from the base client; this is primarily to make it nicer
 // to write methods against this type, but in the future we could also use different clients ids
 // and secrets for different tenants.
-type TenantCnct struct {
+type Tenant struct {
 	AccessToken  *AccessToken
 	ClientID     string
 	ClientSecret string
@@ -32,16 +32,16 @@ func NewClient(clientID, clientSecret string) *Client {
 	return &Client{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
-		Cncts:        make(map[string]*TenantCnct),
+		Cncts:        make(map[string]*Tenant),
 	}
 }
 
 // Tenant returns the connection for a specific tenant, by ID. If the tenant doesn't exist, it
 // will be created, but no access token will be fetched.
-func (c *Client) Tenant(tenantID string) *TenantCnct {
+func (c *Client) Tenant(tenantID string) *Tenant {
 	cnct, in := c.Cncts[tenantID]
 	if !in {
-		c.Cncts[tenantID] = &TenantCnct{
+		c.Cncts[tenantID] = &Tenant{
 			AccessToken:  &AccessToken{},
 			ClientID:     c.ClientID,
 			ClientSecret: c.ClientSecret,
