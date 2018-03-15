@@ -1,8 +1,6 @@
+// Package msgoraph implements client state, authentication, pagination, type helpers, and method
+// helpers concerning accessing resources in the Microsoft Graph API.
 package msgoraph
-
-import (
-	"sync"
-)
 
 // Client maintains "connections" to multiple tenants' Azure instances. It takes care of auto-
 // updating API tokens if they're expired, and maintaining separate tokens for each tenant
@@ -11,20 +9,6 @@ type Client struct {
 	ClientID     string
 	ClientSecret string
 	Cncts        map[string]*Tenant
-}
-
-// Tenant represents an individual connection to an azure tenant. Note that this copies the
-// client id and client secret fields from the base client; this is primarily to make it nicer
-// to write methods against this type, but in the future we could also use different clients ids
-// and secrets for different tenants.
-type Tenant struct {
-	AccessToken  *AccessToken
-	ClientID     string
-	ClientSecret string
-	TenantID     string
-	// A mutex is used to protect the access token against refreshes by multiple threads. This is
-	// all handled by the RefreshAccessTokenIfExpired function.
-	UpdatingAccessToken sync.Mutex
 }
 
 // NewClient creates a new client connection to the azure graph api.

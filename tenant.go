@@ -1,11 +1,13 @@
 package msgoraph
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 )
 
@@ -14,6 +16,20 @@ import (
 type AccessToken struct {
 	ExpiresAt time.Time
 	Token     string
+}
+
+// Tenant represents an individual connection to an azure tenant. Note that this copies the
+// client id and client secret fields from the base client; this is primarily to make it nicer
+// to write methods against this type, but in the future we could also use different clients ids
+// and secrets for different tenants.
+type Tenant struct {
+	AccessToken  *AccessToken
+	ClientID     string
+	ClientSecret string
+	TenantID     string
+	// A mutex is used to protect the access token against refreshes by multiple threads. This is
+	// all handled by the RefreshAccessTokenIfExpired function.
+	UpdatingAccessToken sync.Mutex
 }
 
 // AuthEndpoint returns the oauth2 endpoint to which should be used when making a request to
@@ -86,4 +102,46 @@ func (t *Tenant) RefreshAccessTokenIfExpired() error {
 		return nil
 	}
 	return t.RefreshAccessToken()
+}
+
+func (t *Tenant) request(method string, path string) ([]byte, error) {
+	req, err := http.NewRequest(method, fmt.Sprintf("https://graph.microsoft.com/v1.0/%v", path), nil)
+	if err != nil {
+		return nil, err
+	}
+	return t.requestCore(req)
+}
+
+func (t *Tenant) requestWithBody(method string, path string, body interface{}) ([]byte, error) {
+	j, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(method, fmt.Sprintf("https://graph.microsoft.com/v1.0/%v", path), bytes.NewBuffer(j))
+	if err != nil {
+		return nil, err
+	}
+	return t.requestCore(req)
+}
+
+func (t *Tenant) requestWithParams(method string, path string, params url.Values) ([]byte, error) {
+	req, err := http.NewRequest(method, fmt.Sprintf("https://graph.microsoft.com/v1.0/%v?%v", path, params.Encode()), nil)
+	if err != nil {
+		return nil, err
+	}
+	return t.requestCore(req)
+}
+
+func (t *Tenant) requestCore(req *http.Request) ([]byte, error) {
+	err := t.RefreshAccessTokenIfExpired()
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", t.AccessToken.Token))
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return ioutil.ReadAll(resp.Body)
 }
