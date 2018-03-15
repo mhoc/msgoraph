@@ -59,3 +59,4 @@ msgoraph.Users().List()
 - `List Users`
 - `Create User`
 - `Get User`
+- `Delete User`
