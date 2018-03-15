@@ -9,15 +9,15 @@ import (
 	"time"
 )
 
-// AccessToken exports information about an individual access token that is used by the
-// tenant connection to determine when to update the token.
+// AccessToken contains information about an individual access token that is used by the tenant
+// to determine when to update the token.
 type AccessToken struct {
 	ExpiresAt time.Time
 	Token     string
 }
 
-// AuthEndpoint returns the oauth2 endpoint to which we should make a post request to retrieve
-// a new oauth2 token.
+// AuthEndpoint returns the oauth2 endpoint to which should be used when making a request to
+// retrieve a new oauth2 token.
 func (t *Tenant) AuthEndpoint() string {
 	return fmt.Sprintf("https://login.microsoftonline.com/%v/oauth2/v2.0/token", t.TenantID)
 }
