@@ -187,6 +187,42 @@ type listUsersResponse struct {
 	Value    []*User `json:"value"`
 }
 
+// UpdateUserRequest contains the request body to update a user.
+type UpdateUserRequest struct {
+	AboutMe               string                `json:"aboutMe"`
+	AccountEnabled        string                `json:"accountEnabled"`
+	AssignedLicenses      []UserAssignedLicense `json:"assignedLicenses"`
+	Birthday              string                `json:"birthday"`
+	City                  string                `json:"city"`
+	Country               string                `json:"country"`
+	Department            string                `json:"department"`
+	DisplayName           string                `json:"displayName"`
+	GivenName             string                `json:"givenName"`
+	HireDate              string                `json:"hireDate"`
+	Interests             []string              `json:"interests"`
+	JobTitle              string                `json:"jobTitle"`
+	MailNickname          string                `json:"mailNickname"`
+	MobilePhone           string                `json:"mobilePhone"`
+	MySite                string                `json:"mySite"`
+	OfficeLocation        string                `json:"officeLocation"`
+	OnPremisesImmutableID string                `json:"onPremisesImmutableId"`
+	PasswordPolicies      string                `json:"passwordPolicies"`
+	PasswordProfile       UserPasswordProfile   `json:"passwordProfile"`
+	PastProjects          []string              `json:"pastProjects"`
+	PostalCode            string                `json:"postalCode"`
+	PreferredLanguage     string                `json:"preferredLanguage"`
+	PreferredName         string                `json:"preferredName"`
+	Responsibilities      []string              `json:"responsibilities"`
+	Schools               []string              `json:"schools"`
+	Skills                []string              `json:"skills"`
+	State                 string                `json:"state"`
+	StreetAddress         string                `json:"streetAddress"`
+	Surname               string                `json:"surname"`
+	UsageLocation         string                `json:"usageLocation"`
+	UserPrincipalName     string                `json:"userPrincipalName"`
+	UserType              string                `json:"userType"`
+}
+
 // User the user resource type in the microsoft graph qpi. Interpreted from this API
 // documentation https://developer.microsoft.com/en-us/graph/docs/api-reference/v1.0/resources/user
 type User struct {
@@ -281,12 +317,12 @@ type UserPasswordProfile struct {
 
 // UserResource is a resource type for user information.
 type UserResource struct {
-	*Tenant
+	tenant *Tenant
 }
 
 // Create creates a new user in the tenant.
 func (ur *UserResource) Create(user CreateUserRequest) (*User, error) {
-	b, err := ur.Tenant.requestWithBody("POST", "users", user)
+	b, err := ur.tenant.requestWithBody("POST", "users", user)
 	var data getUserResponse
 	err = json.Unmarshal(b, &data)
 	if err != nil {
@@ -297,7 +333,7 @@ func (ur *UserResource) Create(user CreateUserRequest) (*User, error) {
 
 // Delete deletes an existing user by id or principal name.
 func (ur *UserResource) Delete(userIDOrPrincipal string) error {
-	_, err := ur.Tenant.request("DELETE", fmt.Sprintf("users/%v", userIDOrPrincipal))
+	_, err := ur.tenant.request("DELETE", fmt.Sprintf("users/%v", userIDOrPrincipal))
 	return err
 }
 
@@ -311,7 +347,7 @@ func (ur *UserResource) Get(userIDOrPrincipal string) (*User, error) {
 // fields you want to project on the user returned. You can specify UserDefaultFields or
 // UserAllFields, or customize it depending on what you want.
 func (ur *UserResource) GetWithFields(userIDOrPrincipal string, projection []UserField) (*User, error) {
-	err := ur.Tenant.RefreshAccessTokenIfExpired()
+	err := ur.tenant.RefreshAccessTokenIfExpired()
 	if err != nil {
 		return nil, err
 	}
@@ -327,7 +363,7 @@ func (ur *UserResource) GetWithFields(userIDOrPrincipal string, projection []Use
 	}
 	v := url.Values{}
 	v.Set("$select", selectFields)
-	b, err := ur.Tenant.requestWithParams("GET", "users/%v", v)
+	b, err := ur.tenant.requestWithParams("GET", "users/%v", v)
 	var data getUserResponse
 	err = json.Unmarshal(b, &data)
 	if err != nil {
@@ -346,7 +382,7 @@ func (ur *UserResource) List() ([]*User, error) {
 // fields you want to project on the users returned. You can specify UserDefaultFields or
 // UserAllFields, or customize it depending on what you want.
 func (ur *UserResource) ListWithFields(projection []UserField) ([]*User, error) {
-	err := ur.Tenant.RefreshAccessTokenIfExpired()
+	err := ur.tenant.RefreshAccessTokenIfExpired()
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +391,7 @@ func (ur *UserResource) ListWithFields(projection []UserField) ([]*User, error) 
 		if err != nil {
 			return nil, "", err
 		}
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", ur.Tenant.AccessToken.Token))
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", ur.tenant.AccessToken.Token))
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return nil, "", err
@@ -393,9 +429,17 @@ func (ur *UserResource) ListWithFields(projection []UserField) ([]*User, error) 
 	return users, nil
 }
 
-// Users create a UserResousrce from a tenant connection.
+// Update updates a user in the microsoft graph api, by userid or principal name, which is usually
+// their email address. You can provide as few or many fields in the request as you'd like to
+// update.
+func (ur *UserResource) Update(userIDOrPrincipal string, u UpdateUserRequest) error {
+	_, err := ur.tenant.requestWithBody("PATCH", fmt.Sprintf("users/%v", userIDOrPrincipal), u)
+	return err
+}
+
+// Users chains a UserResousrce from a tenant connection.
 func (t *Tenant) Users() *UserResource {
 	return &UserResource{
-		Tenant: t,
+		tenant: t,
 	}
 }
