@@ -1,4 +1,4 @@
-package msgoraph
+package common
 
 // AssignedPlan property of both user entity and organization entity is a
 // collection of assignedPlan

@@ -10,7 +10,8 @@ This library is pre-release, under active development, and has no tests. We will
 
 ## Supported Operations
 
-- `List Users`
-- `Create User`
-- `Get User`
-- `Delete User`
+- `Users :: Create`
+- `Users :: Delete`
+- `Users :: Get`
+- `Users :: List`
+- `Users :: Update`

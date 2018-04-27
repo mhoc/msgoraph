@@ -12,3 +12,13 @@
 
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
+
+# Configuration file that contains parameters to access a Microsoft Graph API application for 
+# testing purposes. This is parsed at test-time. If it is not provided, the tests will fail.
+# The content of this file should look something like
+# {
+#   "ClientID": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxx",
+#   "ClientSecret": "as09djfa9sjdf",
+#   "TenantID": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxx",
+# }
+test.json
