@@ -12,10 +12,11 @@ This library is pre-release, under active development, and has no tests. We will
 
 This library is in pre-release, and as such the Go Import Compatibility Rule does not apply. Backward-incompatible changes should be expected between all tagged versions and commits. 
 
-## Supported Operations
+## Supported Features
 
-- `Users :: Create`
-- `Users :: Delete`
-- `Users :: Get`
-- `Users :: List`
-- `Users :: Update`
+- Authorization on behalf of a user
+- Users :: Create
+- Users :: Delete
+- Users :: Get
+- Users :: List
+- Users :: Update
