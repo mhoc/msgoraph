@@ -12,6 +12,12 @@ This library is pre-release, under active development, and has no tests. We will
 
 This library is in pre-release, and as such the Go Import Compatibility Rule does not apply. Backward-incompatible changes should be expected between all tagged versions and commits. 
 
+## Example Usage
+
+We'll get more examples on how to use this library online as it matures.
+
+For the time being, check out [msgraph-cli](https://github.com/mhoc/msgraph-cli), which uses msgoraph to power most of its internals. That should give a sense of how using this library works, at least in terms of the version that the cli pins against.
+
 ## Supported Features
 
 - Authorization on behalf of a user
