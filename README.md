@@ -8,9 +8,9 @@ A zero dependency Go Client for [Microsoft's Graph API](https://developer.micros
 
 This library is completely unaffiliated with Microsoft.
 
-This library is pre-release, under active development, and has no tests. We will do our best to ensure that tagged releases are stable enough to use the functionality they export, but bugs could happen. 
+This library is in pre-release, under active development, and has no tests. We will do our best to ensure that tagged releases are stable enough to use the functionality they export, but bugs could happen. 
 
-This library is in pre-release, and as such the Go Import Compatibility Rule does not apply. Backward-incompatible changes should be expected between all tagged versions and commits. 
+Because it is in pre-release, the Go Import Compatibility Rule does not apply. Backward-incompatible changes should be expected between all tagged versions and commits. 
 
 ## Example Usage
 
