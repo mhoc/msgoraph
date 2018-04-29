@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/mhoc/msgoraph/auth"
+	"github.com/mhoc/msgoraph/client"
 	"github.com/mhoc/msgoraph/internal"
 )
 
@@ -35,12 +35,12 @@ type ListUsersResponse struct {
 // ServiceContext represents a namespace under which all of the operations against user-namespaced
 // resources are accessed.
 type ServiceContext struct {
-	credentials *auth.Credentials
+	client client.Client
 }
 
 // Service creates a new users.ServiceContext with the given authentication credentials.
-func Service(credentials *auth.Credentials) *ServiceContext {
-	return &ServiceContext{credentials: credentials}
+func Service(client client.Client) *ServiceContext {
+	return &ServiceContext{client: client}
 }
 
 // UpdateUserRequest contains the request body to update a user.
@@ -81,7 +81,7 @@ type UpdateUserRequest struct {
 
 // CreateUser creates a new user in the tenant.
 func (s *ServiceContext) CreateUser(createUser CreateUserRequest) (User, error) {
-	body, err := internal.GraphRequest(s.credentials, "POST", "v1.0/users", nil, createUser)
+	body, err := internal.GraphRequest(s.client, "POST", "v1.0/users", nil, createUser)
 	var data GetUserResponse
 	err = json.Unmarshal(body, &data)
 	if err != nil {
@@ -93,7 +93,7 @@ func (s *ServiceContext) CreateUser(createUser CreateUserRequest) (User, error) 
 // DeleteUser deletes an existing user by id or principal name.
 func (s *ServiceContext) DeleteUser(userIDOrPrincipal string) error {
 	reqURL := fmt.Sprintf("v1.0/users/%v", userIDOrPrincipal)
-	_, err := internal.GraphRequest(s.credentials, "DELETE", reqURL, nil, nil)
+	_, err := internal.GraphRequest(s.client, "DELETE", reqURL, nil, nil)
 	return err
 }
 
@@ -120,7 +120,7 @@ func (s *ServiceContext) GetUserWithFields(userIDOrPrincipal string, projection 
 	v := url.Values{}
 	v.Set("$select", selectFields)
 	reqURL := fmt.Sprintf("v1.0/users/%v", userIDOrPrincipal)
-	b, err := internal.GraphRequest(s.credentials, "GET", reqURL, v, nil)
+	b, err := internal.GraphRequest(s.client, "GET", reqURL, v, nil)
 	var data GetUserResponse
 	err = json.Unmarshal(b, &data)
 	if err != nil {
@@ -140,7 +140,7 @@ func (s *ServiceContext) ListUsers() ([]User, error) {
 // UserAllFields, or customize it depending on what you want.
 func (s *ServiceContext) ListUsersWithFields(projection []Field) ([]User, error) {
 	getUserPage := func(url string) ([]User, string, error) {
-		b, err := internal.BasicGraphRequest(s.credentials, "GET", url)
+		b, err := internal.BasicGraphRequest(s.client, "GET", url)
 		var data ListUsersResponse
 		err = json.Unmarshal(b, &data)
 		if err != nil {
@@ -175,6 +175,6 @@ func (s *ServiceContext) ListUsersWithFields(projection []Field) ([]User, error)
 // to update.
 func (s *ServiceContext) UpdateUser(userIDOrPrincipal string, u UpdateUserRequest) error {
 	reqURL := fmt.Sprintf("v1.0/users/%v", userIDOrPrincipal)
-	_, err := internal.GraphRequest(s.credentials, "PATCH", reqURL, nil, u)
+	_, err := internal.GraphRequest(s.client, "PATCH", reqURL, nil, u)
 	return err
 }

@@ -13,11 +13,25 @@ type Scope struct {
 	Permission           string
 }
 
-// CreateQueryString will turn a list of scopes into a query string suitable for consumption by
+// Scopes is an alias to an array of scopes, with some additional logic on the type to make interfacing
+// with the collection easier.
+type Scopes []Scope
+
+// HasScope returns true if the list of scopes contains the requested scope.
+func (s Scopes) HasScope(scope Scope) bool {
+	for _, iS := range s {
+		if iS.Permission == scope.Permission && iS.Application == scope.Application && iS.Delegated == scope.Delegated {
+			return true
+		}
+	}
+	return false
+}
+
+// QueryString will turn a list of scopes into a query string suitable for consumption by
 // the Graph API. Something like "offline_access user.read mail.read".
-func CreateQueryString(scopes []Scope) string {
+func (s Scopes) QueryString() string {
 	qs := ""
-	for _, scope := range scopes {
+	for _, scope := range s {
 		qs += scope.Permission + " "
 	}
 	return qs

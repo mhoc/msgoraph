@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/mhoc/msgoraph/auth"
+	"github.com/mhoc/msgoraph/client"
 )
 
 const (
@@ -20,16 +20,16 @@ const (
 // BasicGraphRequest is similar to GraphRequest, but it assumes an already fully formed url and no
 // body. This is primarily useful for methods that need to pagniate; it just makes that a little bit
 // easier.
-func BasicGraphRequest(credentials *auth.Credentials, method string, url string) ([]byte, error) {
+func BasicGraphRequest(client client.Client, method string, url string) ([]byte, error) {
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		return nil, err
 	}
-	err = credentials.RefreshAccessToken()
+	err = client.RefreshCredentials()
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", credentials.AccessToken))
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", client.Credentials().AccessToken))
 	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -41,7 +41,7 @@ func BasicGraphRequest(credentials *auth.Credentials, method string, url string)
 // GraphRequest creates and executes a new http request against the Graph API. The path
 // provided should be the entire path of the url, including the version specifier. It returns the
 // response body, along with any errors that might occur during the request process.
-func GraphRequest(credentials *auth.Credentials, method string, path string, params url.Values, body interface{}) ([]byte, error) {
+func GraphRequest(client client.Client, method string, path string, params url.Values, body interface{}) ([]byte, error) {
 	var graphURL string
 	if len(params) > 0 {
 		graphURL = fmt.Sprintf("%v%v?%v", GraphAPIRootURL, path, params.Encode())
@@ -60,11 +60,11 @@ func GraphRequest(credentials *auth.Credentials, method string, path string, par
 	if err != nil {
 		return nil, err
 	}
-	err = credentials.RefreshAccessToken()
+	err = client.RefreshCredentials()
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", credentials.AccessToken))
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", client.Credentials().AccessToken))
 	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
