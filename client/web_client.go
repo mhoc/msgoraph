@@ -118,7 +118,7 @@ func (w *Web) RefreshCredentials() error {
 		return fmt.Errorf("this web client was not configured for offline access and token refresh. to configure this, provide an offline scope during the initial client authorization")
 	}
 	if w.RefreshToken == "" {
-		return fmt.Errorf("client.Web: no refresh token found in web client. call client.InitialAuth to fill this")
+		return fmt.Errorf("client.Web: no refresh token found in web client. call client.InitializeCredentials to fill this")
 	}
 	w.RequestCredentials.AccessTokenUpdating.Lock()
 	defer w.RequestCredentials.AccessTokenUpdating.Unlock()

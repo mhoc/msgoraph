@@ -1,1 +1,1 @@
-module "github.com/mhoc/msgoraph"
+module github.com/mhoc/msgoraph
