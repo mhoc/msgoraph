@@ -11,6 +11,8 @@ import (
 	"github.com/mhoc/msgoraph/scopes"
 )
 
+var _ Client = (*Headless)(nil)
+
 // Headless is used to authenticate requests in the context of a backend app. This is the most
 // common way for applications to authenticate with the api.
 type Headless struct {
@@ -20,6 +22,7 @@ type Headless struct {
 	RefreshToken       string
 	RequestCredentials *RequestCredentials
 	Scopes             scopes.Scopes
+	HTTPClient         *http.Client
 }
 
 // NewHeadless creates a new headless connection.
@@ -29,7 +32,12 @@ func NewHeadless(applicationID string, applicationSecret string, scopes scopes.S
 		ApplicationSecret:  applicationSecret,
 		RequestCredentials: &RequestCredentials{},
 		Scopes:             scopes,
+		HTTPClient:         http.DefaultClient,
 	}
+}
+
+func (h Headless) httpClient() *http.Client {
+	return h.HTTPClient
 }
 
 // Credentials returns back the set of credentials used for every request.

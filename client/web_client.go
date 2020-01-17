@@ -16,6 +16,8 @@ import (
 	"github.com/mhoc/msgoraph/scopes"
 )
 
+var _ Client = (*Web)(nil)
+
 // Web is used to authenticate requests in the context of an online/user-facing app, such
 // as a website. This type of client is mostly useful for debugging or for command line apps where
 // the user configures their own app on the Microsoft Graph portal. In a normal web app, the
@@ -32,6 +34,7 @@ type Web struct {
 	RefreshToken       string
 	RequestCredentials *RequestCredentials
 	Scopes             scopes.Scopes
+	HTTPClient         *http.Client
 }
 
 // NewWeb creates a new client.Web connection. To initialize the authentication on this, call
@@ -43,7 +46,12 @@ func NewWeb(applicationID string, applicationSecret string, redirectURIPort int,
 		LocalhostPort:      redirectURIPort,
 		RequestCredentials: &RequestCredentials{},
 		Scopes:             scopes,
+		HTTPClient:         http.DefaultClient,
 	}
+}
+
+func (w *Web) httpClient() *http.Client {
+	return w.HTTPClient
 }
 
 // Credentials returns back the set of request credentials in this client. Conforms to the

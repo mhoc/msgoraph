@@ -1,6 +1,7 @@
 package client
 
 import (
+	"net/http"
 	"sync"
 	"time"
 )
@@ -19,6 +20,8 @@ type Client interface {
 	// RequestCredentials.AccessTokenExpiresAt field to determine whether it should actually refresh
 	// the credentials or if the credentials are still valid.
 	RefreshCredentials() error
+
+	httpClient() *http.Client
 }
 
 // RequestCredentials stores all the information necessary to authenticate a request with the
