@@ -21,7 +21,8 @@ type Client interface {
 	// the credentials or if the credentials are still valid.
 	RefreshCredentials() error
 
-	httpClient() *http.Client
+	// HTTPClient returns the `*http.Client` to use for this Client.
+	HTTPClient() *http.Client
 }
 
 // RequestCredentials stores all the information necessary to authenticate a request with the

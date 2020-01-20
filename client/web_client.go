@@ -34,7 +34,7 @@ type Web struct {
 	RefreshToken       string
 	RequestCredentials *RequestCredentials
 	Scopes             scopes.Scopes
-	HTTPClient         *http.Client
+	Client             *http.Client
 }
 
 // NewWeb creates a new client.Web connection. To initialize the authentication on this, call
@@ -46,12 +46,13 @@ func NewWeb(applicationID string, applicationSecret string, redirectURIPort int,
 		LocalhostPort:      redirectURIPort,
 		RequestCredentials: &RequestCredentials{},
 		Scopes:             scopes,
-		HTTPClient:         http.DefaultClient,
+		Client:             http.DefaultClient,
 	}
 }
 
-func (w *Web) httpClient() *http.Client {
-	return w.HTTPClient
+// HTTPClient returns the `*http.Client` to use for this `*Web` instance.
+func (w *Web) HTTPClient() *http.Client {
+	return w.Client
 }
 
 // Credentials returns back the set of request credentials in this client. Conforms to the
@@ -137,7 +138,7 @@ func (w *Web) RefreshCredentials() error {
 	if err != nil {
 		return err
 	}
-	resp, err := w.httpClient().PostForm(tokenURI.String(), url.Values{
+	resp, err := w.HTTPClient().PostForm(tokenURI.String(), url.Values{
 		"client_id":     {w.ApplicationID},
 		"grant_type":    {"refresh_token"},
 		"redirect_uri":  {w.redirectURI()},
@@ -196,7 +197,7 @@ func (w *Web) setAccessToken() error {
 	if err != nil {
 		return err
 	}
-	resp, err := w.httpClient().PostForm(tokenURI.String(), url.Values{
+	resp, err := w.HTTPClient().PostForm(tokenURI.String(), url.Values{
 		"client_id":     {w.ApplicationID},
 		"client_secret": {w.ApplicationSecret},
 		"code":          {w.AuthorizationCode},

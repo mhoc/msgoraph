@@ -30,7 +30,7 @@ func BasicGraphRequest(ctx context.Context, client Client, method string, url st
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", client.Credentials().AccessToken))
 	req.Header.Add("Content-Type", "application/json")
-	resp, err := client.httpClient().Do(req)
+	resp, err := client.HTTPClient().Do(req)
 	if err != nil {
 		return nil, err
 	}

@@ -22,7 +22,7 @@ type Headless struct {
 	RefreshToken       string
 	RequestCredentials *RequestCredentials
 	Scopes             scopes.Scopes
-	HTTPClient         *http.Client
+	Client             *http.Client
 }
 
 // NewHeadless creates a new headless connection.
@@ -32,12 +32,13 @@ func NewHeadless(applicationID string, applicationSecret string, scopes scopes.S
 		ApplicationSecret:  applicationSecret,
 		RequestCredentials: &RequestCredentials{},
 		Scopes:             scopes,
-		HTTPClient:         http.DefaultClient,
+		Client:             http.DefaultClient,
 	}
 }
 
-func (h Headless) httpClient() *http.Client {
-	return h.HTTPClient
+// HTTPClient returns the `*http.Client` to use for this `Headless` instance.
+func (h Headless) HTTPClient() *http.Client {
+	return h.Client
 }
 
 // Credentials returns back the set of credentials used for every request.
@@ -56,7 +57,7 @@ func (h Headless) InitializeCredentials() error {
 	if err != nil {
 		return err
 	}
-	resp, err := h.httpClient().PostForm(tokenURI.String(), url.Values{
+	resp, err := h.HTTPClient().PostForm(tokenURI.String(), url.Values{
 		"client_id":     {h.ApplicationID},
 		"client_secret": {h.ApplicationSecret},
 		"grant_type":    {"client_credentials"},
