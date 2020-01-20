@@ -56,7 +56,7 @@ func (h Headless) InitializeCredentials() error {
 	if err != nil {
 		return err
 	}
-	resp, err := http.PostForm(tokenURI.String(), url.Values{
+	resp, err := h.httpClient().PostForm(tokenURI.String(), url.Values{
 		"client_id":     {h.ApplicationID},
 		"client_secret": {h.ApplicationSecret},
 		"grant_type":    {"client_credentials"},

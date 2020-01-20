@@ -137,7 +137,7 @@ func (w *Web) RefreshCredentials() error {
 	if err != nil {
 		return err
 	}
-	resp, err := http.PostForm(tokenURI.String(), url.Values{
+	resp, err := w.httpClient().PostForm(tokenURI.String(), url.Values{
 		"client_id":     {w.ApplicationID},
 		"grant_type":    {"refresh_token"},
 		"redirect_uri":  {w.redirectURI()},
@@ -196,7 +196,7 @@ func (w *Web) setAccessToken() error {
 	if err != nil {
 		return err
 	}
-	resp, err := http.PostForm(tokenURI.String(), url.Values{
+	resp, err := w.httpClient().PostForm(tokenURI.String(), url.Values{
 		"client_id":     {w.ApplicationID},
 		"client_secret": {w.ApplicationSecret},
 		"code":          {w.AuthorizationCode},
