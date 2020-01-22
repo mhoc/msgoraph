@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/mhoc/msgoraph/common"
 )
@@ -84,4 +85,18 @@ func handleResp(ctx context.Context, resp *http.Response) ([]byte, error) {
 		return nil, *errResp.Error
 	}
 	return b, nil
+}
+
+// postForm is an alternative to `http.(*Client).PostForm` that allows to passing a `context.Context`.
+func postForm(ctx context.Context, client *http.Client, uri string, data url.Values) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uri, strings.NewReader(data.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }

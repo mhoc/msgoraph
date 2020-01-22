@@ -68,7 +68,7 @@ func (w *Web) InitializeCredentials(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = w.setAccessToken()
+	err = w.setAccessToken(ctx)
 	return err
 }
 
@@ -138,7 +138,7 @@ func (w *Web) RefreshCredentials(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := w.HTTPClient().PostForm(tokenURI.String(), url.Values{
+	resp, err := postForm(ctx, w.HTTPClient(), tokenURI.String(), url.Values{
 		"client_id":     {w.ApplicationID},
 		"grant_type":    {"refresh_token"},
 		"redirect_uri":  {w.redirectURI()},
@@ -184,7 +184,7 @@ func (w *Web) RefreshCredentials(ctx context.Context) error {
 	return nil
 }
 
-func (w *Web) setAccessToken() error {
+func (w *Web) setAccessToken(ctx context.Context) error {
 	if w.AuthorizationCode == "" {
 		return fmt.Errorf("client.Web: no access code found in web client")
 	}
@@ -197,7 +197,7 @@ func (w *Web) setAccessToken() error {
 	if err != nil {
 		return err
 	}
-	resp, err := w.HTTPClient().PostForm(tokenURI.String(), url.Values{
+	resp, err := postForm(ctx, w.HTTPClient(), tokenURI.String(), url.Values{
 		"client_id":     {w.ApplicationID},
 		"client_secret": {w.ApplicationSecret},
 		"code":          {w.AuthorizationCode},

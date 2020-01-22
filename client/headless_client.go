@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/mhoc/msgoraph/scopes"
@@ -59,24 +58,17 @@ func (h Headless) InitializeCredentials(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(
+	resp, err := postForm(
 		ctx,
-		http.MethodPost,
+		h.HTTPClient(),
 		tokenURI.String(),
-		strings.NewReader(
-			url.Values{
-				"client_id":     {h.ApplicationID},
-				"client_secret": {h.ApplicationSecret},
-				"grant_type":    {"client_credentials"},
-				"scope":         {"https://graph.microsoft.com/.default"},
-			}.Encode(),
-		),
+		url.Values{
+			"client_id":     {h.ApplicationID},
+			"client_secret": {h.ApplicationSecret},
+			"grant_type":    {"client_credentials"},
+			"scope":         {"https://graph.microsoft.com/.default"},
+		},
 	)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := h.HTTPClient().Do(req)
 	if err != nil {
 		return err
 	}
