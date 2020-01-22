@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -80,8 +79,7 @@ func (h Headless) InitializeCredentials(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	b, err := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
+	b, err := handleResp(ctx, resp)
 	if err != nil {
 		return err
 	}

@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/mhoc/msgoraph/common"
 )
 
 // GraphAPIRootURL is the root url that the Graph API is hosted on.
@@ -43,8 +45,7 @@ func BasicGraphRequest(ctx context.Context, client Client, method string, url st
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	return ioutil.ReadAll(resp.Body)
+	return handleResp(ctx, resp)
 }
 
 // GraphRequest creates and executes a new http request against the Graph API. The path
@@ -65,4 +66,22 @@ func GraphRequest(ctx context.Context, client Client, method string, path string
 		bodyBuffered = bytes.NewBuffer(j)
 	}
 	return BasicGraphRequest(ctx, client, method, graphURL.String(), bodyBuffered)
+}
+
+func handleResp(ctx context.Context, resp *http.Response) ([]byte, error) {
+	b, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		return b, err
+	}
+	if resp.StatusCode >= 400 {
+		var errResp common.GraphErrorResponse
+		if err := json.Unmarshal(b, &errResp); err != nil || errResp.Error == nil {
+			// Either the response isn't JSON, or isn't the structure we're expecting.
+			// Just return an error with the information we have.
+			return nil, fmt.Errorf("%s: %s", resp.Status, b)
+		}
+		return nil, *errResp.Error
+	}
+	return b, nil
 }
