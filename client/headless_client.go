@@ -19,7 +19,7 @@ var _ Client = (*Headless)(nil)
 type Headless struct {
 	ApplicationID      string
 	ApplicationSecret  string
-	Error              error
+	Tenant             string
 	RefreshToken       string
 	RequestCredentials *RequestCredentials
 	Scopes             scopes.Scopes
@@ -31,6 +31,7 @@ func NewHeadless(applicationID string, applicationSecret string, scopes scopes.S
 	return &Headless{
 		ApplicationID:      applicationID,
 		ApplicationSecret:  applicationSecret,
+		Tenant:             "common",
 		RequestCredentials: &RequestCredentials{},
 		Scopes:             scopes,
 		Client:             http.DefaultClient,
@@ -54,7 +55,7 @@ func (h Headless) InitializeCredentials(ctx context.Context) error {
 	if h.RequestCredentials.AccessToken != "" && h.RequestCredentials.AccessTokenExpiresAt.After(time.Now()) {
 		return nil
 	}
-	tokenURI, err := url.Parse("https://login.microsoftonline.com/common/oauth2/v2.0/token")
+	tokenURI, err := url.Parse("https://login.microsoftonline.com/" + url.PathEscape(h.Tenant) + "/oauth2/v2.0/token")
 	if err != nil {
 		return err
 	}
