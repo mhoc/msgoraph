@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 )
@@ -32,4 +33,28 @@ type RequestCredentials struct {
 	AccessToken          string
 	AccessTokenExpiresAt time.Time
 	AccessTokenUpdating  sync.Mutex
+}
+
+// ConsentURL builds the consent URL needed to add this application to a target Azure domain.
+func ConsentURL(applicationID, redirectURI, state string) (*url.URL, error) {
+	consentURL, err := url.Parse("https://login.microsoftonline.com/common/adminconsent")
+	if err != nil {
+		return nil, err
+	}
+
+	query := url.Values{
+		"client_id": []string{applicationID},
+	}
+
+	if redirectURI != "" {
+		query.Set("redirect_uri", redirectURI)
+	}
+
+	if state != "" {
+		query.Set("state", state)
+	}
+
+	consentURL.RawQuery = query.Encode()
+
+	return consentURL, nil
 }

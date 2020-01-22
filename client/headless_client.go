@@ -124,3 +124,8 @@ func (h Headless) InitializeCredentials(ctx context.Context) error {
 func (h Headless) RefreshCredentials(ctx context.Context) error {
 	return h.InitializeCredentials(ctx)
 }
+
+// ConsentURL builds the consent URL needed to add this application to a target Azure domain.
+func (h Headless) ConsentURL(redirectURL, state string) (*url.URL, error) {
+	return ConsentURL(h.ApplicationID, redirectURL, state)
+}
