@@ -3,9 +3,9 @@ package users
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/mhoc/msgoraph/client"
 )
@@ -82,7 +82,7 @@ type UpdateUserRequest struct {
 
 // CreateUser creates a new user in the tenant.
 func (s *ServiceContext) CreateUser(ctx context.Context, createUser CreateUserRequest) (User, error) {
-	body, err := client.GraphRequest(ctx, s.client, http.MethodPost, "v1.0/users", nil, createUser)
+	body, err := client.GraphRequest(ctx, s.client, http.MethodPost, "/v1.0/users", nil, createUser)
 	var data GetUserResponse
 	err = json.Unmarshal(body, &data)
 	if err != nil {
@@ -93,7 +93,7 @@ func (s *ServiceContext) CreateUser(ctx context.Context, createUser CreateUserRe
 
 // DeleteUser deletes an existing user by id or principal name.
 func (s *ServiceContext) DeleteUser(ctx context.Context, userIDOrPrincipal string) error {
-	reqURL := fmt.Sprintf("v1.0/users/%v", userIDOrPrincipal)
+	reqURL := "/v1.0/users/" + url.PathEscape(userIDOrPrincipal)
 	_, err := client.GraphRequest(ctx, s.client, http.MethodDelete, reqURL, nil, nil)
 	return err
 }
@@ -108,20 +108,9 @@ func (s *ServiceContext) GetUser(ctx context.Context, userIDOrPrincipal string) 
 // fields you want to project on the user returned. You can specify UserDefaultFields or
 // UserAllFields, or customize it depending on what you want.
 func (s *ServiceContext) GetUserWithFields(ctx context.Context, userIDOrPrincipal string, projection []Field) (User, error) {
-	if len(projection) == 0 {
-		return User{}, fmt.Errorf("no fields provided in call to Users")
-	}
-	selectFields := ""
-	for i, requestField := range projection {
-		if i != 0 {
-			selectFields += ","
-		}
-		selectFields += string(requestField)
-	}
-	v := url.Values{}
-	v.Set("$select", selectFields)
-	reqURL := fmt.Sprintf("v1.0/users/%v", userIDOrPrincipal)
-	b, err := client.GraphRequest(ctx, s.client, http.MethodGet, reqURL, v, nil)
+	query := s.selectFields(url.Values{}, projection)
+	reqURL := "/v1.0/users/" + url.PathEscape(userIDOrPrincipal)
+	b, err := client.GraphRequest(ctx, s.client, http.MethodGet, reqURL, query, nil)
 	var data GetUserResponse
 	err = json.Unmarshal(b, &data)
 	if err != nil {
@@ -130,52 +119,71 @@ func (s *ServiceContext) GetUserWithFields(ctx context.Context, userIDOrPrincipa
 	return data.User, nil
 }
 
-// ListUsers returns all users in the tenant, with each user projected with the Microsoft-defined
-// default fields identical to UserDefaultFields.
-func (s *ServiceContext) ListUsers(ctx context.Context) ([]User, error) {
-	return s.ListUsersWithFields(ctx, UserDefaultFields)
+func (s *ServiceContext) selectFields(query url.Values, fields []Field) url.Values {
+	if len(fields) == 0 {
+		return query
+	}
+	selectFields := strings.Builder{}
+	for i, requestField := range fields {
+		if i != 0 {
+			selectFields.WriteByte(',')
+		}
+		selectFields.WriteString(string(requestField))
+	}
+	query.Set("$select", selectFields.String())
+	return query
 }
 
-// ListUsersWithFields returns the users on a tenant's azure instance. You need to specify a list of
-// fields you want to project on the users returned. You can specify UserDefaultFields or
-// UserAllFields, or customize it depending on what you want.
+// ListUsers returns all users in the tenant, with each user projected with the default fields
+// returned by the API.
+func (s *ServiceContext) ListUsers(ctx context.Context) ([]User, error) {
+	return s.ListUsersWithFields(ctx, nil)
+}
+
+// ListUsersWithFields returns the users on a tenant's Azure instance. The provided fields are
+// used as the `$select` parameter to the API. You can specify `UserDefaultFields` or
+// `UserAllFields`, or customize it depending on what you want. If you specify no fields, the
+// API will returns its default fields.
 func (s *ServiceContext) ListUsersWithFields(ctx context.Context, projection []Field) ([]User, error) {
-	getUserPage := func(url string) ([]User, string, error) {
-		b, err := client.BasicGraphRequest(ctx, s.client, http.MethodGet, url, nil)
-		var data ListUsersResponse
-		err = json.Unmarshal(b, &data)
-		if err != nil {
-			return nil, "", err
-		}
-		return data.Value, data.NextPage, nil
+	query := s.selectFields(url.Values{}, projection)
+	usersURL, err := client.GraphAPIRootURL.Parse("/v1.0/users")
+	if err != nil {
+		return nil, err
 	}
+	usersURL.RawQuery = query.Encode()
+	nextURL := usersURL.String()
 	var users []User
-	if len(projection) == 0 {
-		return nil, fmt.Errorf("no fields provided in call to Users")
-	}
-	filter := "$select="
-	for _, requestField := range projection {
-		filter += string(requestField) + ","
-	}
-	nextURL := fmt.Sprintf("https://graph.microsoft.com/v1.0/users?%v", filter)
 	for nextURL != "" {
-		pageUsers, next, err := getUserPage(nextURL)
+		pageUsers, next, err := s.getUserPage(ctx, nextURL)
 		if err != nil {
 			return nil, err
 		}
-		for _, pageUser := range pageUsers {
-			users = append(users, pageUser)
+		for i := range pageUsers {
+			users = append(users, pageUsers[i])
 		}
 		nextURL = next
 	}
 	return users, nil
 }
 
+func (s *ServiceContext) getUserPage(ctx context.Context, url string) ([]User, string, error) {
+	b, err := client.BasicGraphRequest(ctx, s.client, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, "", err
+	}
+	var data ListUsersResponse
+	err = json.Unmarshal(b, &data)
+	if err != nil {
+		return nil, "", err
+	}
+	return data.Value, data.NextPage, nil
+}
+
 // UpdateUser updates a user in the microsoft graph api, by userid or principal name, which is
 // usually their email address. You can provide as few or many fields in the request as you'd like
 // to update.
 func (s *ServiceContext) UpdateUser(ctx context.Context, userIDOrPrincipal string, u UpdateUserRequest) error {
-	reqURL := fmt.Sprintf("v1.0/users/%v", userIDOrPrincipal)
+	reqURL := "/v1.0/users/" + url.PathEscape(userIDOrPrincipal)
 	_, err := client.GraphRequest(ctx, s.client, http.MethodPatch, reqURL, nil, u)
 	return err
 }

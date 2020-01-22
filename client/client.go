@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"net/http"
 	"sync"
 	"time"
@@ -13,13 +14,13 @@ type Client interface {
 
 	// InitializeCredentials should make the initial requests necessary to establish the first set of
 	// authentication credentials within the Client.
-	InitializeCredentials() error
+	InitializeCredentials(context.Context) error
 
 	// RefreshCredentials should initiate an internal refresh of the request credentials inside this
 	// client. This refresh should, whenever possible, check the
 	// RequestCredentials.AccessTokenExpiresAt field to determine whether it should actually refresh
 	// the credentials or if the credentials are still valid.
-	RefreshCredentials() error
+	RefreshCredentials(context.Context) error
 
 	// HTTPClient returns the `*http.Client` to use for this Client.
 	HTTPClient() *http.Client

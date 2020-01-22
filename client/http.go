@@ -11,10 +11,17 @@ import (
 	"net/url"
 )
 
-const (
-	// GraphAPIRootURL is the root url that the Graph API is hosted on.
-	GraphAPIRootURL = "https://graph.microsoft.com/"
-)
+// GraphAPIRootURL is the root url that the Graph API is hosted on.
+var GraphAPIRootURL = mustParseURL("https://graph.microsoft.com")
+
+func mustParseURL(u string) *url.URL {
+	parsed, err := url.Parse(u)
+	if err != nil {
+		panic(err)
+	}
+
+	return parsed
+}
 
 // BasicGraphRequest is similar to GraphRequest, but it assumes an already fully formed url and no
 // body. This is primarily useful for methods that need to pagniate; it just makes that a little bit
@@ -24,12 +31,14 @@ func BasicGraphRequest(ctx context.Context, client Client, method string, url st
 	if err != nil {
 		return nil, err
 	}
-	err = client.RefreshCredentials()
+	err = client.RefreshCredentials(ctx)
 	if err != nil {
 		return nil, err
 	}
+	if body != nil {
+		req.Header.Add("Content-Type", "application/json")
+	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", client.Credentials().AccessToken))
-	req.Header.Add("Content-Type", "application/json")
 	resp, err := client.HTTPClient().Do(req)
 	if err != nil {
 		return nil, err
@@ -41,12 +50,11 @@ func BasicGraphRequest(ctx context.Context, client Client, method string, url st
 // provided should be the entire path of the url, including the version specifier. It returns the
 // response body, along with any errors that might occur during the request process.
 func GraphRequest(ctx context.Context, client Client, method string, path string, params url.Values, body interface{}) ([]byte, error) {
-	var graphURL string
-	if len(params) > 0 {
-		graphURL = fmt.Sprintf("%v%v?%v", GraphAPIRootURL, path, params.Encode())
-	} else {
-		graphURL = fmt.Sprintf("%v%v", GraphAPIRootURL, path)
+	graphURL, err := GraphAPIRootURL.Parse(path)
+	if err != nil {
+		return nil, err
 	}
+	graphURL.RawQuery = params.Encode()
 	var bodyBuffered io.Reader
 	if body != nil {
 		j, err := json.Marshal(body)
@@ -55,5 +63,5 @@ func GraphRequest(ctx context.Context, client Client, method string, path string
 		}
 		bodyBuffered = bytes.NewBuffer(j)
 	}
-	return BasicGraphRequest(ctx, client, method, graphURL, bodyBuffered)
+	return BasicGraphRequest(ctx, client, method, graphURL.String(), bodyBuffered)
 }

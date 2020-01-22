@@ -1,11 +1,13 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/mhoc/msgoraph/scopes"
@@ -47,7 +49,7 @@ func (h Headless) Credentials() *RequestCredentials {
 }
 
 // InitializeCredentials will make an initial oauth2 token request for a new token.
-func (h Headless) InitializeCredentials() error {
+func (h Headless) InitializeCredentials(ctx context.Context) error {
 	h.RequestCredentials.AccessTokenUpdating.Lock()
 	defer h.RequestCredentials.AccessTokenUpdating.Unlock()
 	if h.RequestCredentials.AccessToken != "" && h.RequestCredentials.AccessTokenExpiresAt.After(time.Now()) {
@@ -57,12 +59,24 @@ func (h Headless) InitializeCredentials() error {
 	if err != nil {
 		return err
 	}
-	resp, err := h.HTTPClient().PostForm(tokenURI.String(), url.Values{
-		"client_id":     {h.ApplicationID},
-		"client_secret": {h.ApplicationSecret},
-		"grant_type":    {"client_credentials"},
-		"scope":         {"https://graph.microsoft.com/.default"},
-	})
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		tokenURI.String(),
+		strings.NewReader(
+			url.Values{
+				"client_id":     {h.ApplicationID},
+				"client_secret": {h.ApplicationSecret},
+				"grant_type":    {"client_credentials"},
+				"scope":         {"https://graph.microsoft.com/.default"},
+			}.Encode(),
+		),
+	)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := h.HTTPClient().Do(req)
 	if err != nil {
 		return err
 	}
@@ -107,6 +121,6 @@ func (h Headless) InitializeCredentials() error {
 // RefreshCredentials will refresh the connection credentials. This just proxies through to
 // InitializeCredentials, because in the context of a headless appliction we should probably already
 // have the application secret key.
-func (h Headless) RefreshCredentials() error {
-	return h.InitializeCredentials()
+func (h Headless) RefreshCredentials(ctx context.Context) error {
+	return h.InitializeCredentials(ctx)
 }

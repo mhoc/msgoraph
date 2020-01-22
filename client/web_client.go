@@ -63,7 +63,7 @@ func (w *Web) Credentials() *RequestCredentials {
 
 // InitializeCredentials starts an oauth login flow to retrieve an authorization code, then exchange
 // that authorization code for an access token and (if offline access is enabled) a refresh token.
-func (w *Web) InitializeCredentials() error {
+func (w *Web) InitializeCredentials(ctx context.Context) error {
 	err := w.setAuthorizationCode()
 	if err != nil {
 		return err
@@ -122,7 +122,7 @@ func (w *Web) redirectURI() string {
 
 // RefreshCredentials will attempt to refresh the access token if it is expired. This call will fail
 // if the original authorization was not made with a Offline scope provided.
-func (w *Web) RefreshCredentials() error {
+func (w *Web) RefreshCredentials(ctx context.Context) error {
 	if !w.Scopes.HasScope(scopes.DelegatedOfflineAccess) {
 		return fmt.Errorf("this web client was not configured for offline access and token refresh. to configure this, provide an offline scope during the initial client authorization")
 	}
