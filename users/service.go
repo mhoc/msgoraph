@@ -33,15 +33,15 @@ type ListUsersResponse struct {
 	Value    []User `json:"value"`
 }
 
-// ServiceContext represents a namespace under which all of the operations against user-namespaced
+// Service represents a namespace under which all of the operations against user-namespaced
 // resources are accessed.
-type ServiceContext struct {
+type Service struct {
 	client client.Client
 }
 
-// Service creates a new users.ServiceContext with the given authentication credentials.
-func Service(client client.Client) *ServiceContext {
-	return &ServiceContext{client: client}
+// NewService creates a new `*Service` that will use the given `client.Client`.
+func NewService(client client.Client) *Service {
+	return &Service{client: client}
 }
 
 // UpdateUserRequest contains the request body to update a user.
@@ -81,7 +81,7 @@ type UpdateUserRequest struct {
 }
 
 // CreateUser creates a new user in the tenant.
-func (s *ServiceContext) CreateUser(ctx context.Context, createUser CreateUserRequest) (User, error) {
+func (s *Service) CreateUser(ctx context.Context, createUser CreateUserRequest) (User, error) {
 	body, err := client.GraphRequest(ctx, s.client, http.MethodPost, "/v1.0/users", nil, createUser)
 	var data GetUserResponse
 	err = json.Unmarshal(body, &data)
@@ -92,7 +92,7 @@ func (s *ServiceContext) CreateUser(ctx context.Context, createUser CreateUserRe
 }
 
 // DeleteUser deletes an existing user by id or principal name.
-func (s *ServiceContext) DeleteUser(ctx context.Context, userIDOrPrincipal string) error {
+func (s *Service) DeleteUser(ctx context.Context, userIDOrPrincipal string) error {
 	reqURL := "/v1.0/users/" + url.PathEscape(userIDOrPrincipal)
 	_, err := client.GraphRequest(ctx, s.client, http.MethodDelete, reqURL, nil, nil)
 	return err
@@ -100,14 +100,14 @@ func (s *ServiceContext) DeleteUser(ctx context.Context, userIDOrPrincipal strin
 
 // GetUser returns a single user by id or principal name, with the Microsoft default fields
 // provided, identical to those specified in UserDefaultFields.
-func (s *ServiceContext) GetUser(ctx context.Context, userIDOrPrincipal string) (User, error) {
+func (s *Service) GetUser(ctx context.Context, userIDOrPrincipal string) (User, error) {
 	return s.GetUserWithFields(ctx, userIDOrPrincipal, UserDefaultFields)
 }
 
 // GetUserWithFields returns a single user by id or principal name. You need to specify a list of
 // fields you want to project on the user returned. You can specify UserDefaultFields or
 // UserAllFields, or customize it depending on what you want.
-func (s *ServiceContext) GetUserWithFields(ctx context.Context, userIDOrPrincipal string, projection []Field) (User, error) {
+func (s *Service) GetUserWithFields(ctx context.Context, userIDOrPrincipal string, projection []Field) (User, error) {
 	query := s.selectFields(url.Values{}, projection)
 	reqURL := "/v1.0/users/" + url.PathEscape(userIDOrPrincipal)
 	b, err := client.GraphRequest(ctx, s.client, http.MethodGet, reqURL, query, nil)
@@ -119,7 +119,7 @@ func (s *ServiceContext) GetUserWithFields(ctx context.Context, userIDOrPrincipa
 	return data.User, nil
 }
 
-func (s *ServiceContext) selectFields(query url.Values, fields []Field) url.Values {
+func (s *Service) selectFields(query url.Values, fields []Field) url.Values {
 	if len(fields) == 0 {
 		return query
 	}
@@ -136,7 +136,7 @@ func (s *ServiceContext) selectFields(query url.Values, fields []Field) url.Valu
 
 // ListUsers returns all users in the tenant, with each user projected with the default fields
 // returned by the API.
-func (s *ServiceContext) ListUsers(ctx context.Context) ([]User, error) {
+func (s *Service) ListUsers(ctx context.Context) ([]User, error) {
 	return s.ListUsersWithFields(ctx, nil)
 }
 
@@ -144,7 +144,7 @@ func (s *ServiceContext) ListUsers(ctx context.Context) ([]User, error) {
 // used as the `$select` parameter to the API. You can specify `UserDefaultFields` or
 // `UserAllFields`, or customize it depending on what you want. If you specify no fields, the
 // API will returns its default fields.
-func (s *ServiceContext) ListUsersWithFields(ctx context.Context, projection []Field) ([]User, error) {
+func (s *Service) ListUsersWithFields(ctx context.Context, projection []Field) ([]User, error) {
 	query := s.selectFields(url.Values{}, projection)
 	usersURL, err := client.GraphAPIRootURL.Parse("/v1.0/users")
 	if err != nil {
@@ -166,7 +166,7 @@ func (s *ServiceContext) ListUsersWithFields(ctx context.Context, projection []F
 	return users, nil
 }
 
-func (s *ServiceContext) getUserPage(ctx context.Context, url string) ([]User, string, error) {
+func (s *Service) getUserPage(ctx context.Context, url string) ([]User, string, error) {
 	b, err := client.BasicGraphRequest(ctx, s.client, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, "", err
@@ -182,7 +182,7 @@ func (s *ServiceContext) getUserPage(ctx context.Context, url string) ([]User, s
 // UpdateUser updates a user in the microsoft graph api, by userid or principal name, which is
 // usually their email address. You can provide as few or many fields in the request as you'd like
 // to update.
-func (s *ServiceContext) UpdateUser(ctx context.Context, userIDOrPrincipal string, u UpdateUserRequest) error {
+func (s *Service) UpdateUser(ctx context.Context, userIDOrPrincipal string, u UpdateUserRequest) error {
 	reqURL := "/v1.0/users/" + url.PathEscape(userIDOrPrincipal)
 	_, err := client.GraphRequest(ctx, s.client, http.MethodPatch, reqURL, nil, u)
 	return err
