@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -108,8 +109,8 @@ func (w *Web) localServer() *http.Server {
 			// This will throw an error when we shutdown the server during the normal authorization flow
 			// So we try to catch that error, and only return the real error if it isn't the expected
 			// error.
-			if !strings.Contains(err.Error(), "Server closed") {
-				w.Error = fmt.Errorf("error on ListenAndServe: %v", err)
+			if !errors.Is(err, http.ErrServerClosed) {
+				w.Error = fmt.Errorf("error on ListenAndServe: %w", err)
 			}
 		}
 	}()
