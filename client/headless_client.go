@@ -81,6 +81,7 @@ func (h Headless) InitializeCredentials(ctx context.Context) error {
 		return err
 	}
 	b, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
 	if err != nil {
 		return err
 	}

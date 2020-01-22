@@ -43,6 +43,7 @@ func BasicGraphRequest(ctx context.Context, client Client, method string, url st
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	return ioutil.ReadAll(resp.Body)
 }
 
