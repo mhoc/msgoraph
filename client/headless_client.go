@@ -1,9 +1,9 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
@@ -11,15 +11,18 @@ import (
 	"github.com/mhoc/msgoraph/scopes"
 )
 
+var _ Client = (*Headless)(nil)
+
 // Headless is used to authenticate requests in the context of a backend app. This is the most
 // common way for applications to authenticate with the api.
 type Headless struct {
 	ApplicationID      string
 	ApplicationSecret  string
-	Error              error
+	Tenant             string
 	RefreshToken       string
 	RequestCredentials *RequestCredentials
 	Scopes             scopes.Scopes
+	Client             *http.Client
 }
 
 // NewHeadless creates a new headless connection.
@@ -27,9 +30,16 @@ func NewHeadless(applicationID string, applicationSecret string, scopes scopes.S
 	return &Headless{
 		ApplicationID:      applicationID,
 		ApplicationSecret:  applicationSecret,
+		Tenant:             "common",
 		RequestCredentials: &RequestCredentials{},
 		Scopes:             scopes,
+		Client:             http.DefaultClient,
 	}
+}
+
+// HTTPClient returns the `*http.Client` to use for this `Headless` instance.
+func (h Headless) HTTPClient() *http.Client {
+	return h.Client
 }
 
 // Credentials returns back the set of credentials used for every request.
@@ -38,26 +48,31 @@ func (h Headless) Credentials() *RequestCredentials {
 }
 
 // InitializeCredentials will make an initial oauth2 token request for a new token.
-func (h Headless) InitializeCredentials() error {
+func (h Headless) InitializeCredentials(ctx context.Context) error {
 	h.RequestCredentials.AccessTokenUpdating.Lock()
 	defer h.RequestCredentials.AccessTokenUpdating.Unlock()
 	if h.RequestCredentials.AccessToken != "" && h.RequestCredentials.AccessTokenExpiresAt.After(time.Now()) {
 		return nil
 	}
-	tokenURI, err := url.Parse("https://login.microsoftonline.com/common/oauth2/v2.0/token")
+	tokenURI, err := url.Parse("https://login.microsoftonline.com/" + url.PathEscape(h.Tenant) + "/oauth2/v2.0/token")
 	if err != nil {
 		return err
 	}
-	resp, err := http.PostForm(tokenURI.String(), url.Values{
-		"client_id":     {h.ApplicationID},
-		"client_secret": {h.ApplicationSecret},
-		"grant_type":    {"client_credentials"},
-		"scope":         {"https://graph.microsoft.com/.default"},
-	})
+	resp, err := postForm(
+		ctx,
+		h.HTTPClient(),
+		tokenURI.String(),
+		url.Values{
+			"client_id":     {h.ApplicationID},
+			"client_secret": {h.ApplicationSecret},
+			"grant_type":    {"client_credentials"},
+			"scope":         {"https://graph.microsoft.com/.default"},
+		},
+	)
 	if err != nil {
 		return err
 	}
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := handleResp(ctx, resp)
 	if err != nil {
 		return err
 	}
@@ -98,6 +113,11 @@ func (h Headless) InitializeCredentials() error {
 // RefreshCredentials will refresh the connection credentials. This just proxies through to
 // InitializeCredentials, because in the context of a headless appliction we should probably already
 // have the application secret key.
-func (h Headless) RefreshCredentials() error {
-	return h.InitializeCredentials()
+func (h Headless) RefreshCredentials(ctx context.Context) error {
+	return h.InitializeCredentials(ctx)
+}
+
+// ConsentURL builds the consent URL needed to add this application to a target Azure domain.
+func (h Headless) ConsentURL(redirectURL, state string) (*url.URL, error) {
+	return ConsentURL(h.ApplicationID, redirectURL, state)
 }

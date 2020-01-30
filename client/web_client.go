@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -15,6 +16,8 @@ import (
 
 	"github.com/mhoc/msgoraph/scopes"
 )
+
+var _ Client = (*Web)(nil)
 
 // Web is used to authenticate requests in the context of an online/user-facing app, such
 // as a website. This type of client is mostly useful for debugging or for command line apps where
@@ -32,6 +35,7 @@ type Web struct {
 	RefreshToken       string
 	RequestCredentials *RequestCredentials
 	Scopes             scopes.Scopes
+	Client             *http.Client
 }
 
 // NewWeb creates a new client.Web connection. To initialize the authentication on this, call
@@ -43,7 +47,13 @@ func NewWeb(applicationID string, applicationSecret string, redirectURIPort int,
 		LocalhostPort:      redirectURIPort,
 		RequestCredentials: &RequestCredentials{},
 		Scopes:             scopes,
+		Client:             http.DefaultClient,
 	}
+}
+
+// HTTPClient returns the `*http.Client` to use for this `*Web` instance.
+func (w *Web) HTTPClient() *http.Client {
+	return w.Client
 }
 
 // Credentials returns back the set of request credentials in this client. Conforms to the
@@ -54,12 +64,12 @@ func (w *Web) Credentials() *RequestCredentials {
 
 // InitializeCredentials starts an oauth login flow to retrieve an authorization code, then exchange
 // that authorization code for an access token and (if offline access is enabled) a refresh token.
-func (w *Web) InitializeCredentials() error {
+func (w *Web) InitializeCredentials(ctx context.Context) error {
 	err := w.setAuthorizationCode()
 	if err != nil {
 		return err
 	}
-	err = w.setAccessToken()
+	err = w.setAccessToken(ctx)
 	return err
 }
 
@@ -99,8 +109,8 @@ func (w *Web) localServer() *http.Server {
 			// This will throw an error when we shutdown the server during the normal authorization flow
 			// So we try to catch that error, and only return the real error if it isn't the expected
 			// error.
-			if !strings.Contains(err.Error(), "Server closed") {
-				w.Error = fmt.Errorf("error on ListenAndServe: %v", err)
+			if !errors.Is(err, http.ErrServerClosed) {
+				w.Error = fmt.Errorf("error on ListenAndServe: %w", err)
 			}
 		}
 	}()
@@ -113,7 +123,7 @@ func (w *Web) redirectURI() string {
 
 // RefreshCredentials will attempt to refresh the access token if it is expired. This call will fail
 // if the original authorization was not made with a Offline scope provided.
-func (w *Web) RefreshCredentials() error {
+func (w *Web) RefreshCredentials(ctx context.Context) error {
 	if !w.Scopes.HasScope(scopes.DelegatedOfflineAccess) {
 		return fmt.Errorf("this web client was not configured for offline access and token refresh. to configure this, provide an offline scope during the initial client authorization")
 	}
@@ -129,7 +139,7 @@ func (w *Web) RefreshCredentials() error {
 	if err != nil {
 		return err
 	}
-	resp, err := http.PostForm(tokenURI.String(), url.Values{
+	resp, err := postForm(ctx, w.HTTPClient(), tokenURI.String(), url.Values{
 		"client_id":     {w.ApplicationID},
 		"grant_type":    {"refresh_token"},
 		"redirect_uri":  {w.redirectURI()},
@@ -175,7 +185,7 @@ func (w *Web) RefreshCredentials() error {
 	return nil
 }
 
-func (w *Web) setAccessToken() error {
+func (w *Web) setAccessToken(ctx context.Context) error {
 	if w.AuthorizationCode == "" {
 		return fmt.Errorf("client.Web: no access code found in web client")
 	}
@@ -188,7 +198,7 @@ func (w *Web) setAccessToken() error {
 	if err != nil {
 		return err
 	}
-	resp, err := http.PostForm(tokenURI.String(), url.Values{
+	resp, err := postForm(ctx, w.HTTPClient(), tokenURI.String(), url.Values{
 		"client_id":     {w.ApplicationID},
 		"client_secret": {w.ApplicationSecret},
 		"code":          {w.AuthorizationCode},
